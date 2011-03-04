@@ -162,31 +162,29 @@ namespace DynamicRest {
 
             Uri requestUri = CreateRequestUri(operationName, argsObject);
             HttpWebRequest webRequest = CreateWebRequest(requestUri);
-            HttpWebResponse webResponse = null;
+
             try {
-                webResponse = (HttpWebResponse)webRequest.GetResponse();
+                HttpWebResponse webResponse = (HttpWebResponse)webRequest. GetResponse();
+
+                if (webResponse.StatusCode == HttpStatusCode.OK) {
+                    Stream responseStream = webResponse.GetResponseStream();
+
+                    try {
+                        object result = ProcessResponse(responseStream);
+                        operation.Complete(result,
+                                           webResponse.StatusCode, webResponse.StatusDescription);
+                    } catch (Exception e) {
+                        operation.Complete(new WebException(e.Message, e),
+                                           webResponse.StatusCode, webResponse.StatusDescription);
+                    }
+                } else {
+                    operation.Complete(new WebException(webResponse.StatusDescription),
+                                       webResponse.StatusCode, webResponse.StatusDescription);
+                }
             } catch (WebException e) {
-                /* Catch connection errors. The HTTP status code is not correct. */
-                operation.Complete(e, HttpStatusCode.NotImplemented, "Unknown client error");
-                return operation;
-            }
+                HttpWebResponse response = (HttpWebResponse) e.Response;
+                operation.Complete(e, response.StatusCode, response.StatusDescription);
 
-            if (webResponse.StatusCode == HttpStatusCode.OK) {
-                Stream responseStream = webResponse.GetResponseStream();
-
-                try {
-                    object result = ProcessResponse(responseStream);
-                    operation.Complete(result,
-                                       webResponse.StatusCode, webResponse.StatusDescription);
-                }
-                catch (Exception e) {
-                    operation.Complete(new WebException(e.Message, e),
-                                       webResponse.StatusCode, webResponse.StatusDescription);
-                }
-            }
-            else {
-                operation.Complete(new WebException(webResponse.StatusDescription),
-                                   webResponse.StatusCode, webResponse.StatusDescription);
             }
 
             return operation;
