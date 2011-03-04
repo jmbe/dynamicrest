@@ -182,9 +182,12 @@ namespace DynamicRest {
                                        webResponse.StatusCode, webResponse.StatusDescription);
                 }
             } catch (WebException e) {
-                HttpWebResponse response = (HttpWebResponse) e.Response;
-                operation.Complete(e, response.StatusCode, response.StatusDescription);
-
+                HttpWebResponse response = (HttpWebResponse)e.Response;
+                if (e.Response != null) {
+                    operation.Complete(e, response.StatusCode, response.StatusDescription);
+                } else {
+                    operation.Complete(e, HttpStatusCode.NotImplemented, "Unknown client error");
+                }
             }
 
             return operation;
