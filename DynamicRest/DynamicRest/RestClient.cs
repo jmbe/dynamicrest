@@ -143,6 +143,8 @@ namespace DynamicRest {
         private HttpWebRequest CreateWebRequest(Uri requestUri) {
             HttpWebRequest request = (HttpWebRequest) WebRequest.Create(requestUri);
 
+            request.Proxy = WebRequest.DefaultWebProxy;
+
             if (this.credentials != null) {
                 request.Credentials = this.credentials;
             }
@@ -160,7 +162,14 @@ namespace DynamicRest {
 
             Uri requestUri = CreateRequestUri(operationName, argsObject);
             HttpWebRequest webRequest = CreateWebRequest(requestUri);
-            HttpWebResponse webResponse = (HttpWebResponse)webRequest.GetResponse();
+            HttpWebResponse webResponse = null;
+            try {
+                webResponse = (HttpWebResponse)webRequest.GetResponse();
+            } catch (WebException e) {
+                /* Catch connection errors. The HTTP status code is not correct. */
+                operation.Complete(e, HttpStatusCode.NotImplemented, "Unknown client error");
+                return operation;
+            }
 
             if (webResponse.StatusCode == HttpStatusCode.OK) {
                 Stream responseStream = webResponse.GetResponseStream();
