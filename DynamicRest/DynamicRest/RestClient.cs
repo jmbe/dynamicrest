@@ -144,6 +144,7 @@ namespace DynamicRest {
             HttpWebRequest request = (HttpWebRequest) WebRequest.Create(requestUri);
 
             request.Proxy = WebRequest.DefaultWebProxy;
+            request.Proxy.Credentials = CredentialCache.DefaultCredentials;
 
             if (this.credentials != null) {
                 request.Credentials = this.credentials;
